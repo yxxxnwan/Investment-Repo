@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>投资罗盘 · iPhone 本地资产追踪</title>
+<meta name="theme-color" content="#142b45"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="投资罗盘"/>
+<meta name="description" content="在 iPhone 本地记录 IBKR 和 DBS SRS 的入金、持仓、盈亏与资产配置"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="icon" href="icons/icon-192.png"/>
+<link rel="apple-touch-icon" href="icons/icon-180.png"/>
+<link rel="stylesheet" href="style.css"/></head>
+<body><div id="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">◈</div><div><strong>投资罗盘</strong><small>Personal Investment Compass</small></div></div>
+    <nav id="nav">
+      <button data-tab="overview" class="nav active"><span>◫</span> 总览</button>
+      <button data-tab="holdings" class="nav"><span>▤</span> 持仓</button>
+      <button data-tab="activity" class="nav"><span>⇄</span> 流水</button>
+      <button data-tab="allocation" class="nav"><span>◎</span> 配置</button>
+      <button data-tab="settings" class="nav"><span>⚙</span> 设置</button>
+    </nav>
+    <div class="sidebar-foot"><span class="status-dot"></span> 本地保存 · 不连接券商账户<br/><span class="subtle">行情仅在请求时联网获取</span></div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div><div class="eyebrow">WEALTH OPERATING SYSTEM</div><h1 id="pageTitle">投资总览</h1><div class="subtitle" id="pageSubtitle">追踪本金、估值及长期资产配置</div></div>
+      <div class="top-actions"><span id="serverBadge" class="chip">检测行情连接中</span><button class="btn secondary" id="refreshBtn">⟳ 更新报价</button><button class="btn" id="quickAddBtn">+ 新增持仓</button></div></header>
+    <div class="notice" id="alerts"></div>
+    <section id="overview" class="page active">
+      <div class="kpi-grid" id="kpis"></div>
+      <div class="two-col"><div class="card"><div class="card-header"><h2>当前资产配置</h2><span class="tag">仅统计核心投资</span></div><div id="allocationPlot"></div></div>
+      <div class="card"><div class="card-header"><h2>下一笔投入方向</h2><span class="tag">规则建议 · 不是择时预测</span></div><div id="nextSuggestion"></div></div></div>
+      <div class="card"><div class="card-header"><h2>持仓估值概览</h2><button class="link-btn" data-go="holdings">管理持仓 →</button></div><div id="overviewHoldings"></div></div>
+      <div class="card muted-card"><strong>统计口径</strong><p>IBKR + DBS SRS/POEMS 默认计入长期核心资产；OCBC / DBS 银行任务投资默认排除。累计本金按外部入金减提款计算；买入基金只是账户内部资产转换，不会重复计算本金。没有确认持仓数量、成本或现金余额的项目会明确提示。</p></div>
+    </section>
+    <section id="holdings" class="page"><div class="section-intro"><p>填写基金实际持有的 Units / Shares、历史累计成本（SGD），系统就能计算持仓盈亏。支持股票、ETF、单位信托、SSB 和债券。</p><button id="holdingsAddBtn" class="btn">+ 添加基金或债券</button></div><div class="card"><div class="filters"><label><input type="checkbox" id="showTask"/> 同时显示银行任务投资</label><span class="subtle">表中报价可联网更新，也可手动填写；成本与份额由你确认。</span></div><div id="holdingsTable"></div></div></section>
+    <section id="activity" class="page"><div class="two-col"><div class="card"><h2>记录一笔买卖</h2><p class="subtle">已成交后再记录；自动调整持有份额及加权成本。需要时可同步更新对应账户的现金余额。</p><form id="tradeForm" class="form">
+      <label>投资产品<select id="tradeAsset"></select></label><div class="form-2"><label>类型<select id="tradeSide"><option value="buy">买入</option><option value="sell">卖出</option></select></label><label>交易日期<input type="date" id="tradeDate" required/></label></div>
+      <div class="form-2"><label>股数 / 基金单位<input id="tradeUnits" type="number" step="any" min="0.0000001" required placeholder="例如 21.174"/></label><label>总成交额（SGD）<input id="tradeAmount" type="number" step="0.01" min="0" required placeholder="已换算成新币"/></label></div>
+      <label>费用（SGD）<input id="tradeFee" type="number" step="0.01" min="0" value="0"/></label>
+      <label class="check"><input id="tradeCash" type="checkbox" checked/> 同步调整账户现金（SGD，需已设置可靠余额）</label><button class="btn" type="submit">保存交易</button></form></div>
+      <div class="card"><h2>外部入金 / 提款 / 收息</h2><p class="subtle">外部入金才增加累计本金，现金股息和债券利息不算新的本金。</p><form id="flowForm" class="form">
+      <label>账户<select id="flowAccount"><option>IBKR</option><option>DBS SRS / POEMS</option><option>OCBC 任务</option><option>DBS 任务</option></select></label>
+      <div class="form-2"><label>流水类型<select id="flowType"><option value="deposit">外部入金</option><option value="withdraw">外部提款</option><option value="income">股息 / 债券利息</option><option value="fee">其他账户费用</option></select></label><label>日期<input id="flowDate" type="date" required/></label></div>
+      <label>金额（SGD）<input id="flowAmount" type="number" min="0.01" step="0.01" required/></label><label>备注<input id="flowNote" placeholder="例如 2026-11 定投入金"/></label>
+      <label class="check"><input id="flowCash" type="checkbox" checked/> 同步更新账户现金余额</label><button class="btn" type="submit">记录流水</button></form></div></div>
+      <div class="card"><div class="card-header"><h2>账户现金余额</h2><span class="subtle">手动核对账户实际余额 · 不自动读取银行</span></div><div id="cashCards"></div></div>
+      <div class="card"><h2>最近记录</h2><div id="activityTable"></div></div></section>
+    <section id="allocation" class="page"><div class="two-col"><div class="card"><h2>长期股票 / 债券目标</h2><p class="subtle">调整目标后，系统会按实际持仓市值重新计算偏差。</p><div class="slider-wrap"><label>股票目标 <b id="stockLabel">90%</b></label><input type="range" id="stockTarget" min="40" max="100" step="5" value="90"/><label>债券目标 <b id="bondLabel">10%</b></label></div><div id="targetCompare"></div></div>
+      <div class="card"><h2>股票内部地区目标</h2><p class="subtle">通过基金的底层持仓权重近似穿透计算。权重需定期维护，不是实时指数权重。</p><div id="regionInputs"></div><div id="regionCompare"></div></div></div>
+      <div class="card"><h2>按你设定的下一笔预算，优先补哪里？</h2><div class="form-2 adjust"><label>下一笔计划投资（SGD）<input type="number" id="nextAmount" value="500" min="0" step="50"/></label><label>建议口径<select id="adviceMode"><option value="total">按股票 / 债券优先</option><option value="region">按股票地区优先</option></select></label></div><div id="allocationAdvice"></div></div>
+      <div class="card"><h2>每只基金的底层地区权重</h2><div id="weightsTable"></div><p class="subtle">例如 VWRA 不应整体算成“全球”这个独立地区，而应分别归到美国、其他发达市场、新兴市场等。美国、其他发达、新兴、新加坡四项加起来应为 100%（仅股票基金）。</p></div></section>
+    <section id="settings" class="page"><div class="two-col"><div class="card"><h2>行情与币种</h2><div id="marketStatus"></div><div class="form"><label>离线备用 USD → SGD 汇率<input type="number" id="fxManual" min="0.01" step="0.0001"/></label><button class="btn secondary" id="saveFxBtn">更新备用汇率</button></div>
+<div class="form" style="margin-top:16px"><label>可选：ETF 行情代理 HTTPS 地址<input type="url" id="quoteUrl" placeholder="https://your-worker.workers.dev" autocapitalize="none" autocomplete="off" spellcheck="false"/></label><button class="btn secondary" id="saveQuoteBtn">保存并检测行情连接</button></div><p class="subtle">iPhone 版默认离线手动行情。如果你在云端配置了可用的独立行情代理，可以填在下方；它只会请求代码和报价，不上传你的持仓数量或入金记录。行情可能延迟或失效，单位信托仍需手动更新 NAV。</p></div>
+      <div class="card"><h2>账户与本金完整性</h2><div id="completionSettings"></div><p class="subtle">只有把某账户历史全部外部入金与提款补齐，才应开启“资金流水已完整”，否则系统不会用资产总额减不完整本金得出虚假的总收益率。</p></div></div>
+      <div class="card"><h2>保存和迁移数据</h2><p>所有数据保存在本机 iPhone 的网页应用存储，不会自动同步到云端。删除主屏幕应用、清理网站数据或更换手机可能丢失账本。建议每月导出 JSON，保存到 iCloud Drive / 文件 App。</p><div class="button-row"><button class="btn" id="exportBtn">↓ 导出 JSON 备份</button><label class="btn secondary fileinput">↑ 导入 JSON 备份<input id="importFile" type="file" accept="application/json,.json" hidden/></label><button class="btn secondary" id="exportCsvBtn">↓ 导出持仓 CSV</button></div><details><summary>清空并重置账本</summary><p>清空所有自己录入的内容并恢复空白初始状态。此操作无法撤销。</p><button class="btn danger" id="resetBtn">清空全部数据（请先备份）</button></details></div>
+    </section>
+    <footer>Investment Compass · 私人本地账本 · 行情不保证实时 · 不提供交易执行服务</footer>
+  </main>
+</div>
+<dialog id="assetDialog"><form id="assetForm" class="modal-form"><div class="modal-header"><div><div class="eyebrow">PORTFOLIO</div><h2 id="modalTitle">添加持仓</h2></div><button type="button" id="closeAsset" class="icon-btn">✕</button></div>
+  <input type="hidden" id="assetId"/><div class="form-2"><label>产品名称<input id="assetName" required maxlength="100" placeholder="例如 VWRA / Amundi World"/></label><label>所属账户<select id="assetAccount"><option>IBKR</option><option>DBS SRS / POEMS</option><option>OCBC 任务</option><option>DBS 任务</option></select></label></div>
+  <div class="form-2"><label>资产类型<select id="assetClass"><option value="stock">股票指数基金</option><option value="bond">债券 / 国债</option><option value="other">其他投资</option></select></label><label>计价币种<select id="assetCurrency"><option>SGD</option><option>USD</option><option>HKD</option></select></label></div>
+  <div class="form-2"><label>持有份额 Units / Shares<input type="number" min="0" step="any" id="assetUnits" value="0" required/></label><label>累计持仓成本（SGD）<input type="number" min="0" step="0.01" id="assetCost" placeholder="未知则留空"/></label></div>
+  <div class="form-2"><label>Yahoo 行情代码（可选）<input id="assetTicker" placeholder="VWRA.L / SPYL.L / ES3.SI"/></label><label>手动单价 / 最近 NAV<input id="assetPrice" type="number" min="0" step="any" placeholder="例如 239.44"/></label></div>
+  <div class="form-2"><label>手动报价日期<input id="assetPriceDate" type="date"/></label><label>数据来源<select id="assetSource"><option value="auto">自动 ETF 行情（不可用时用手动价）</option><option value="manual">手动 NAV / 债券面值</option></select></label></div>
+  <label>备注<input id="assetNote" maxlength="200" placeholder="例如 Units 待 POEMS 结算确认"/></label>
+  <div class="form-2 weight-edit" id="assetWeights"><label>美国股票 %<input id="wUs" type="number" min="0" max="100" value="0" step="0.1"/></label><label>其他发达市场 %<input id="wDev" type="number" min="0" max="100" value="0" step="0.1"/></label><label>新兴市场 %<input id="wEm" type="number" min="0" max="100" value="0" step="0.1"/></label><label>新加坡股票 %<input id="wSg" type="number" min="0" max="100" value="0" step="0.1"/></label></div>
+  <div class="button-row modal-actions"><button type="button" class="btn secondary" id="cancelAsset">取消</button><button type="submit" class="btn">保存持仓</button></div>
+</form></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="app.js" defer></script>
+<script defer src="pwa.js"></script></body></html>
